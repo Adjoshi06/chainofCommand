@@ -1,55 +1,111 @@
-# Documentation Package: Cryptographically Accountable Multi-Agent Platform
+# Chain of Command
 
-## Purpose
-This documentation package is the implementation source of truth for building a local-first platform where every agent claim and action is provable through signed artifacts and a tamper-evident event chain.
+Local-first, cryptographically accountable traces for multi-agent workflows.
 
-The package is decision complete. An implementation agent should be able to produce a working codebase directly from these documents without making architectural decisions.
+This repo records **signed protocol events** in an append-only ledger, stores **content-addressed artifacts**, and produces **verification reports** that detect tampering (chain breaks, invalid signatures, missing artifacts, role-policy violations, etc.).
 
-## Baseline Decisions
-- Runtime model: local-first single-node system.
-- Primary stack: TypeScript full-stack.
-- Infrastructure dependency: none required for v1.
-- Trust model: cryptographic integrity and provenance under normal host trust.
+For the full system design and v1 requirements, start with `docs/README.md`.
 
-## Reading Order
-1. `docs/01-product-to-architecture-mapping.md`
-2. `docs/02-system-architecture.md`
-3. `docs/03-domain-model-and-data-contracts.md`
-4. `docs/04-cryptography-and-trust-model.md`
-5. `docs/05-agent-protocol-spec.md`
-6. `docs/06-artifact-store-and-ledger-spec.md`
-7. `docs/07-verifier-and-audit-spec.md`
-8. `docs/08-cli-spec.md`
-9. `docs/09-trace-viewer-spec.md`
-10. `docs/10-processing-flows-and-sequence-scenarios.md`
-11. `docs/11-operational-model-and-security-controls.md`
-12. `docs/12-testing-strategy-and-acceptance-criteria.md`
-13. `docs/13-delivery-roadmap-and-milestones.md`
+## Repo layout
 
-## Document Map
-- Product traceability and acceptance mapping: `docs/01-product-to-architecture-mapping.md`
-- Component boundaries and runtime behavior: `docs/02-system-architecture.md`
-- Canonical entities and contracts: `docs/03-domain-model-and-data-contracts.md`
-- Signing and integrity model: `docs/04-cryptography-and-trust-model.md`
-- Multi-agent protocol lifecycle: `docs/05-agent-protocol-spec.md`
-- Artifact and ledger persistence model: `docs/06-artifact-store-and-ledger-spec.md`
-- Verification and reporting pipeline: `docs/07-verifier-and-audit-spec.md`
-- Command line surface and automation contract: `docs/08-cli-spec.md`
-- Investigator user interface requirements: `docs/09-trace-viewer-spec.md`
-- End-to-end processing flows and fault handling: `docs/10-processing-flows-and-sequence-scenarios.md`
-- Deployment, security, and observability controls: `docs/11-operational-model-and-security-controls.md`
-- Validation strategy and quality gates: `docs/12-testing-strategy-and-acceptance-criteria.md`
-- Milestone execution and sequencing: `docs/13-delivery-roadmap-and-milestones.md`
+- `apps/cli` — `coc` CLI (`protocol run`, `audit verify`)
+- `apps/api` — Fastify API for listing traces, events, artifacts, and reports
+- `apps/viewer` — React trace viewer (Vite)
+- `packages/*` — shared contracts, crypto, protocol runner, store, verifier, reporting
+- `docs` — architecture/spec package (source of truth)
+- `tests` — Vitest suites (core primitives + verifier scenarios)
 
-## How to Implement from This Package
-- Implement in reading order.
-- Freeze shared contracts first: identities, envelopes, events, artifacts, verification report.
-- Build core primitives before orchestration: canonicalization, hashing, signatures, append-only ledger.
-- Implement verifier before UI polish to guarantee audit correctness.
-- Treat every rule marked as "must" as a compliance requirement.
+## Prerequisites
 
-## Definition of Done for the Documentation Package
-- Every PRD requirement has an explicit owner component and acceptance test.
-- All interfaces include schema constraints, failure semantics, and versioning behavior.
-- All major workflows include happy path and tamper/error path processing.
-- Milestones M0 through M4 are executable without additional product decisions.
+- Node.js `^18 || ^20 || >=22`
+- pnpm (repo pinned via `packageManager` to `pnpm@10.2.0`)
+
+## Install
+
+```bash
+pnpm install
+```
+
+## Quickstart: run + verify a trace
+
+### 1) Use a shared data directory (`COC_HOME`)
+
+By default, the runtime uses `./.coc` relative to the **current working directory**. When you run scripts via `pnpm --filter ...`, each app runs from its own package folder, so set `COC_HOME` to keep CLI + API pointed at the same data.
+
+PowerShell:
+
+```powershell
+$env:COC_HOME = (Resolve-Path .\.coc).Path
+```
+
+### 2) Create a task file
+
+Create `task.json`:
+
+```json
+{
+  "task_id": "demo_task",
+  "objective": "Generate accountable execution proof.",
+  "input_artifacts": [],
+  "constraints": ["local-only"],
+  "policy_profile": "default",
+  "requested_roles": ["planner", "executor", "critic", "auditor"]
+}
+```
+
+### 3) Run the protocol (emits events + artifacts, then verifies)
+
+```bash
+pnpm protocol:run -- --task task.json
+```
+
+You’ll get a `trace_id` plus a verification verdict. Trace data is written under `COC_HOME`.
+
+### 4) Re-verify (audit)
+
+```bash
+pnpm audit:verify -- --trace <trace_id>
+```
+
+You can also pass a trace path (directory) or an `events.jsonl` path to `--trace`.
+
+## Where data is stored
+
+Given `COC_HOME`, the default layout is:
+
+- `keys/` — agent key registry + PEM keypairs
+- `artifacts/sha256/` — sharded blobs + `.meta.json` sidecars
+- `traces/<trace_id>/events.jsonl` — append-only event ledger (JSON Lines)
+- `traces/<trace_id>/trace.meta.json` — trace/session metadata (head hash, counts, participants, policy)
+- `traces/<trace_id>/reports/<report_id>.json|.txt` — verifier reports
+- `traces/<trace_id>/verification.latest.json` — last verifier report (for UI/API convenience)
+
+## API + Viewer
+
+### Start the API
+
+```bash
+pnpm api:start
+```
+
+Defaults to `http://127.0.0.1:4310` (configure with `COC_API_HOST` / `COC_API_PORT`).
+
+### Start the trace viewer
+
+```bash
+pnpm viewer:dev
+```
+
+The viewer calls the API base URL from `VITE_API_BASE` (defaults to `http://127.0.0.1:4310`).
+
+## Useful scripts
+
+- `pnpm test` — run Vitest once
+- `pnpm test:watch` — watch mode
+- `pnpm protocol:run -- --task <file> [--format json] [--output <path>] [--strict]`
+- `pnpm audit:verify -- --trace <id-or-path> [--format json] [--output <path>] [--strict]`
+
+## Documentation
+
+The `docs/` directory is a decision-complete specification package. If you’re extending the protocol, verifier, API contracts, or UI requirements, start at `docs/README.md` and follow the reading order.
+
