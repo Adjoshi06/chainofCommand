@@ -1,0 +1,21 @@
+{
+  "name": "@coc/cli",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "tsx src/index.ts"
+  },
+  "dependencies": {
+    "@coc/contracts": "workspace:*",
+    "@coc/crypto": "workspace:*",
+    "@coc/protocol": "workspace:*",
+    "@coc/store": "workspace:*",
+    "@coc/verifier": "workspace:*",
+    "commander": "^12.1.0",
+    "pino": "^9.5.0"
+  },
+  "devDependencies": {
+    "tsx": "^4.19.2"
+  }
+}

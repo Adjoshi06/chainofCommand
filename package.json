@@ -1,0 +1,23 @@
+{
+  "name": "chain-of-command",
+  "version": "0.1.0",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "packageManager": "pnpm@10.2.0",
+  "scripts": {
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "protocol:run": "pnpm --filter @coc/cli run start -- protocol run",
+    "audit:verify": "pnpm --filter @coc/cli run start -- audit verify",
+    "api:start": "pnpm --filter @coc/api run start",
+    "viewer:dev": "pnpm --filter @coc/viewer run dev"
+  },
+  "devDependencies": {
+    "@types/node": "^22.13.4",
+    "typescript": "^5.7.3",
+    "vitest": "^2.1.8"
+  }
+}
