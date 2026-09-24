@@ -8,6 +8,24 @@ importers:
 
   .:
     devDependencies:
+      '@coc/contracts':
+        specifier: workspace:^
+        version: link:packages/contracts
+      '@coc/crypto':
+        specifier: workspace:^
+        version: link:packages/crypto
+      '@coc/protocol':
+        specifier: workspace:^
+        version: link:packages/protocol
+      '@coc/reporting':
+        specifier: workspace:^
+        version: link:packages/reporting
+      '@coc/store':
+        specifier: workspace:^
+        version: link:packages/store
+      '@coc/verifier':
+        specifier: workspace:^
+        version: link:packages/verifier
       '@types/node':
         specifier: ^22.13.4
         version: 22.19.11

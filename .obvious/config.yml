@@ -1,0 +1,8 @@
+# obvious repo policy — Adjoshi06/chainofCommand
+# Auto-detected from GitHub repo settings on 2026-09-24.
+default_branch: master
+merge:
+  method: merge            # default method for platform merges
+  available: [merge, squash, rebase]
+  require_human_merge: true
+delete_branch_on_merge: false
